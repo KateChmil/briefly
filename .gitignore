@@ -9,3 +9,6 @@ backend/app/storage/*
 frontend/node_modules/
 frontend/dist/
 .pytest_cache/
+*.db-shm
+*.db-wal
+*.db-journal
