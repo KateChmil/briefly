@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite:///{(BASE_DIR / 'briefly.db').as_posix()}"
     storage_dir: Path = BASE_DIR / "app" / "storage"
     mock_teams_dir: Path = BASE_DIR / "app" / "mock_teams"
+    mock_canvas_dir: Path = BASE_DIR / "app" / "mock_canvas"
+    # Real Canvas instance; the mock is used unless BOTH are set (https only).
+    canvas_base_url: str = ""
+    canvas_token: str = ""
     max_source_chars: int = 12_000
     total_context_chars: int = 60_000
     # Chars of retrieved source excerpts given to the tutor per message.

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "a-int",
+    "name": "Integration techniques homework",
+    "due_in_days": 4,
+    "description": "u-substitution, integration by parts, partial fractions."
+  },
+  {
+    "id": "a-series",
+    "name": "Series convergence quiz",
+    "due_in_days": 9,
+    "due_time": "14:00",
+    "description": "Ratio, root and comparison tests."
+  },
+  {
+    "id": "a-final",
+    "name": "Final exam",
+    "due_in_days": 31,
+    "due_time": "09:00",
+    "description": "Cumulative. Two pages of handwritten notes allowed."
+  }
+]

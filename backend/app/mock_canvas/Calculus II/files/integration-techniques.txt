@@ -1,0 +1,11 @@
+Integration Techniques - Summary
+
+u-substitution: reverse of the chain rule; pick u = inner function.
+By parts: int u dv = uv - int v du; choose u by LIATE.
+Trig identities: sin^2 + cos^2 = 1, half-angle formulas for even powers.
+Trig substitution: a^2 - x^2 -> x = a sin(t); a^2 + x^2 -> x = a tan(t).
+Partial fractions: factor the denominator, split into linear/quadratic
+terms, solve for the constants.
+
+Improper integrals: take limits at infinity or at discontinuities;
+compare with p-integrals for convergence.

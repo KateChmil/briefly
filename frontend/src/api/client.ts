@@ -3,6 +3,9 @@ import type {
   ArtifactKind,
   CalendarImportResult,
   CalendarItem,
+  CanvasAssignment,
+  CanvasItem,
+  CanvasStatus,
   ChatMessage,
   ChatResponse,
   ImportResult,
@@ -100,6 +103,21 @@ export const api = {
     req<TeamsItem[]>(`/teams/files?channel_id=${encodeURIComponent(channelId)}`),
   importTeamsFiles: (id: string, fileIds: string[]) =>
     post<ImportResult>(`/spaces/${id}/sources/teams`, { file_ids: fileIds }),
+
+  getCanvasStatus: () => req<CanvasStatus>('/canvas/status'),
+  listCanvasCourses: () => req<CanvasItem[]>('/canvas/courses'),
+  listCanvasAssignments: (courseId: string) =>
+    req<CanvasAssignment[]>(
+      `/canvas/courses/${encodeURIComponent(courseId)}/assignments`,
+    ),
+  listCanvasFiles: (courseId: string) =>
+    req<CanvasItem[]>(`/canvas/courses/${encodeURIComponent(courseId)}/files`),
+  importCanvasFiles: (id: string, fileIds: string[]) =>
+    post<ImportResult>(`/spaces/${id}/sources/canvas`, { file_ids: fileIds }),
+  importCanvasAssignments: (id: string, courseId: string) =>
+    post<CalendarImportResult>(`/spaces/${id}/calendar/canvas-assignments`, {
+      course_id: courseId,
+    }),
 
   listArtifacts: (id: string) => req<Artifact[]>(`/spaces/${id}/artifacts`),
   regenerateArtifact: (id: string, kind: ArtifactKind) =>

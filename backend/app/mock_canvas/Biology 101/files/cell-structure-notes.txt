@@ -1,0 +1,24 @@
+Cell Structure - Lecture Notes
+
+Cell theory: all living things are made of cells, the cell is the basic
+unit of life, and new cells come from existing cells.
+
+Prokaryotes (bacteria, archaea) have no nucleus or membrane-bound
+organelles. Eukaryotes keep their DNA in a nucleus and compartmentalise
+chemistry in organelles.
+
+Key organelles:
+- Nucleus: stores DNA; transcription happens here.
+- Mitochondria: ATP from cellular respiration; inner folds = cristae.
+- Ribosomes: protein synthesis, free or bound to the rough ER.
+- Rough ER: protein folding; smooth ER: lipids and detox.
+- Golgi apparatus: sorts and ships proteins in vesicles.
+- Lysosomes: break down macromolecules at low pH.
+- Chloroplasts (plants): photosynthesis in thylakoids and stroma.
+
+Membranes are phospholipid bilayers with embedded proteins. Passive
+transport (diffusion, osmosis) needs no ATP; active transport (Na+/K+
+pump) does.
+
+Cell cycle: G1, S (DNA replication), G2, M (mitosis). Checkpoints with
+cyclins and CDKs keep division in order.

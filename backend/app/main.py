@@ -8,6 +8,7 @@ from .db import Base, engine
 from .routers import (
     artifacts,
     calendar,
+    canvas,
     catch_up,
     chat,
     notes,
@@ -40,6 +41,7 @@ for r in (
     spaces.router,
     sources.router,
     teams.router,
+    canvas.router,
     chat.router,
     artifacts.router,
     calendar.router,

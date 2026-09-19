@@ -6,6 +6,10 @@ _TMP = Path(tempfile.mkdtemp(prefix="briefly-test-"))
 os.environ["DATABASE_URL"] = f"sqlite:///{(_TMP / 'test.db').as_posix()}"
 os.environ["STORAGE_DIR"] = str(_TMP / "storage")
 os.environ["MOCK_TEAMS_DIR"] = str(_TMP / "mock_teams")
+os.environ["MOCK_CANVAS_DIR"] = str(_TMP / "mock_canvas")
+# Never let a developer's real Canvas env turn tests into network calls.
+os.environ["CANVAS_BASE_URL"] = ""
+os.environ["CANVAS_TOKEN"] = ""
 os.environ["ANTHROPIC_API_KEY"] = "test-key"
 # Tests always use fake clients; never let a developer's real .env pick the provider.
 os.environ["LLM_PROVIDER"] = "anthropic"
@@ -27,6 +31,7 @@ from app.models import (  # noqa: E402
 )
 
 MOCK_TEAMS_DIR = _TMP / "mock_teams"
+MOCK_CANVAS_DIR = _TMP / "mock_canvas"
 
 
 @pytest.fixture(autouse=True)
@@ -52,6 +57,11 @@ def client():
 @pytest.fixture
 def mock_teams_dir():
     return MOCK_TEAMS_DIR
+
+
+@pytest.fixture
+def mock_canvas_dir():
+    return MOCK_CANVAS_DIR
 
 
 class FakeBlock:

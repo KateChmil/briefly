@@ -36,6 +36,7 @@ class SpaceStatus(str, enum.Enum):
 class SourceOrigin(str, enum.Enum):
     upload = "upload"
     teams = "teams"
+    canvas = "canvas"
 
 
 class ArtifactKind(str, enum.Enum):

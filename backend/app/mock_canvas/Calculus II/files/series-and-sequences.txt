@@ -1,0 +1,16 @@
+Series and Sequences - Convergence Cheatsheet
+
+Geometric series: sum of r^n converges iff |r| < 1, to 1/(1-r).
+p-series: sum 1/n^p converges iff p > 1 (harmonic p=1 diverges).
+
+Tests:
+- nth term test: if a_n does not tend to 0, the series diverges.
+- Ratio test: lim |a_{n+1}/a_n| < 1 converges, > 1 diverges.
+- Root test: lim |a_n|^(1/n) same thresholds.
+- Comparison / limit comparison against a known series.
+- Integral test for positive decreasing terms.
+- Alternating series: decreasing terms to 0 -> converges; check absolute
+  vs conditional convergence.
+
+Taylor: e^x, sin, cos, ln(1+x) expansions; radius of convergence via the
+ratio test.
