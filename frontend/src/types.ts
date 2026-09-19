@@ -7,6 +7,9 @@ export interface SpaceSummary {
   created_at: string
   source_count: number
   artifact_count: number
+  exam_date: string | null
+  sessions_total: number
+  sessions_done: number
 }
 
 export interface Source {
@@ -23,6 +26,7 @@ export interface SpaceDetail {
   name: string
   status: SpaceStatus
   profile: Record<string, unknown> | null
+  exam_date: string | null
   created_at: string
   sources: Source[]
 }
@@ -38,9 +42,10 @@ export interface ChatResponse {
   message: ChatMessage
   space_status: SpaceStatus
   profile_completed: boolean
+  plan_updating: boolean
 }
 
-export type ArtifactKind = 'study_plan' | 'notes' | 'sample_test'
+export type ArtifactKind = 'study_plan' | 'notes' | 'sample_test' | 'flashcards'
 
 export interface Artifact {
   id: number
@@ -72,4 +77,60 @@ export interface QuizQuestion {
 export interface Quiz {
   title: string
   questions: QuizQuestion[]
+}
+
+export interface Flashcard {
+  front: string
+  back: string
+}
+
+export type SessionKind = 'study' | 'review' | 'practice' | 'mock_exam'
+
+export interface StudySession {
+  id: number
+  space_id: string
+  date: string
+  title: string
+  topic: string
+  minutes: number
+  kind: SessionKind
+  done: boolean
+}
+
+export interface PlanContent {
+  overview: string
+  sessions: { date: string; title: string; topic?: string; minutes: number; kind: SessionKind }[]
+}
+
+export type EventKind = 'class' | 'exam' | 'other'
+
+export interface CalendarItem {
+  id: string
+  type: 'event' | 'session' | 'exam'
+  date: string
+  start_time: string | null
+  end_time: string | null
+  title: string
+  kind: string
+  space_id: string | null
+  space_name: string | null
+  done: boolean | null
+  minutes: number | null
+  topic: string | null
+  deletable: boolean
+}
+
+export interface NewEvent {
+  title: string
+  date: string
+  start_time?: string | null
+  end_time?: string | null
+  kind: EventKind
+  space_id?: string | null
+  description?: string
+}
+
+export interface CalendarImportResult {
+  imported: number
+  skipped: number
 }

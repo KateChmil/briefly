@@ -1,8 +1,19 @@
 import enum
 import uuid
+from datetime import date as date_t
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .db import Base
@@ -31,6 +42,7 @@ class ArtifactKind(str, enum.Enum):
     study_plan = "study_plan"
     notes = "notes"
     sample_test = "sample_test"
+    flashcards = "flashcards"
 
 
 class SubjectSpace(Base):
@@ -57,6 +69,25 @@ class SubjectSpace(Base):
     artifacts: Mapped[list["Artifact"]] = relationship(
         back_populates="space", cascade="all, delete-orphan"
     )
+    sessions: Mapped[list["StudySession"]] = relationship(
+        back_populates="space",
+        cascade="all, delete-orphan",
+        order_by="StudySession.date",
+    )
+    events: Mapped[list["CalendarEvent"]] = relationship(
+        back_populates="space", cascade="all, delete-orphan"
+    )
+
+
+def space_exam_date(space: SubjectSpace) -> date_t | None:
+    """The exam date from the student profile, if it is a valid ISO date."""
+    raw = (space.profile or {}).get("exam_date")
+    if not isinstance(raw, str):
+        return None
+    try:
+        return date_t.fromisoformat(raw.strip()[:10])
+    except ValueError:
+        return None
 
 
 class Source(Base):
@@ -111,3 +142,49 @@ class Artifact(Base):
     )
 
     space: Mapped[SubjectSpace] = relationship(back_populates="artifacts")
+
+
+class StudySession(Base):
+    """One dated block from the generated study plan (checkable, shown on the calendar)."""
+
+    __tablename__ = "study_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    space_id: Mapped[str] = mapped_column(
+        ForeignKey("subject_spaces.id", ondelete="CASCADE")
+    )
+    date: Mapped[date_t] = mapped_column(Date)
+    title: Mapped[str] = mapped_column(String(200))
+    topic: Mapped[str] = mapped_column(String(300), default="")
+    minutes: Mapped[int] = mapped_column(Integer, default=45)
+    kind: Mapped[str] = mapped_column(String(20), default="study")
+    done: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+
+    space: Mapped[SubjectSpace] = relationship(back_populates="sessions")
+
+
+class CalendarEvent(Base):
+    """Classes, exams and other events: added by hand or imported from an ICS feed."""
+
+    __tablename__ = "calendar_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    space_id: Mapped[str | None] = mapped_column(
+        ForeignKey("subject_spaces.id", ondelete="CASCADE"), nullable=True
+    )
+    title: Mapped[str] = mapped_column(String(300))
+    date: Mapped[date_t] = mapped_column(Date)
+    start_time: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    end_time: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    kind: Mapped[str] = mapped_column(String(20), default="other")
+    source: Mapped[str] = mapped_column(String(20), default="manual")
+    external_uid: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    description: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+
+    space: Mapped[SubjectSpace | None] = relationship(back_populates="events")

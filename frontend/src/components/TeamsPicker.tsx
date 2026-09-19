@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api/client'
 import type { TeamsItem } from '../types'
-import { Button, Spinner } from './ui'
+import { Button, ErrorNote, Modal, Spinner } from './ui'
 
 interface Props {
   spaceId: string
@@ -22,6 +22,7 @@ export default function TeamsPicker({ spaceId, onClose, onImported }: Props) {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    let cancelled = false
     setItems(null)
     setError('')
     const load =
@@ -30,7 +31,12 @@ export default function TeamsPicker({ spaceId, onClose, onImported }: Props) {
         : step.level === 'channels'
           ? api.listChannels(step.team.id)
           : api.listTeamsFiles(step.channel.id)
-    load.then(setItems).catch((e) => setError(e.message))
+    load
+      .then((r) => !cancelled && setItems(r))
+      .catch((e) => !cancelled && setError(e.message))
+    return () => {
+      cancelled = true
+    }
   }, [step])
 
   const toggle = (id: string) =>
@@ -45,7 +51,12 @@ export default function TeamsPicker({ spaceId, onClose, onImported }: Props) {
     setBusy(true)
     setError('')
     try {
-      await api.importTeamsFiles(spaceId, [...selected])
+      const result = await api.importTeamsFiles(spaceId, [...selected])
+      if (result.skipped.length && result.imported.length === 0) {
+        setError(`Nothing imported: ${result.skipped[0].reason}`)
+        setBusy(false)
+        return
+      }
       await onImported()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Import failed')
@@ -53,29 +64,20 @@ export default function TeamsPicker({ spaceId, onClose, onImported }: Props) {
     }
   }
 
-  return (
-    <div
-      className="fixed inset-0 z-10 flex items-center justify-center bg-black/30"
-      onClick={onClose}
-    >
-      <div
-        className="flex h-96 w-full max-w-md flex-col rounded-xl bg-white p-5 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold text-slate-900">
-            {step.level === 'teams' && 'Microsoft Teams'}
-            {step.level === 'channels' && step.team.name}
-            {step.level === 'files' && step.channel.name}
-          </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
-            ✕
-          </button>
-        </div>
+  const title =
+    step.level === 'teams'
+      ? 'Microsoft Teams'
+      : step.level === 'channels'
+        ? step.team.name
+        : `${step.team.name} › ${step.channel.name}`
 
+  return (
+    <Modal title={title} onClose={onClose}>
+      <div className="flex h-72 flex-col">
+        <p className="mb-2 text-xs text-slate-400">Demo data — a real Teams connection plugs in here.</p>
         {step.level !== 'teams' && (
           <button
-            className="mb-2 text-left text-xs text-indigo-600 hover:underline"
+            className="mb-2 self-start text-xs font-medium text-indigo-600 hover:underline"
             onClick={() =>
               setStep(
                 step.level === 'channels'
@@ -89,19 +91,20 @@ export default function TeamsPicker({ spaceId, onClose, onImported }: Props) {
         )}
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {items === null ? (
-            <Spinner label="Loading..." />
-          ) : items.length === 0 ? (
+          {error && <ErrorNote>{error}</ErrorNote>}
+          {items === null && !error ? (
+            <Spinner label="Loading…" />
+          ) : items?.length === 0 ? (
             <p className="text-sm text-slate-400">Nothing here.</p>
           ) : (
             <ul className="space-y-1">
-              {items.map((item) =>
+              {items?.map((item) =>
                 step.level === 'files' ? (
                   <li key={item.id}>
-                    <label className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-slate-50">
+                    <label className="flex cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm transition hover:bg-slate-50">
                       <input
                         type="checkbox"
+                        className="h-4 w-4 rounded accent-indigo-600"
                         checked={selected.has(item.id)}
                         onChange={() => toggle(item.id)}
                       />
@@ -111,19 +114,16 @@ export default function TeamsPicker({ spaceId, onClose, onImported }: Props) {
                 ) : (
                   <li key={item.id}>
                     <button
-                      className="w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-50"
+                      className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition hover:bg-slate-50"
                       onClick={() =>
                         step.level === 'teams'
                           ? setStep({ level: 'channels', team: item })
-                          : setStep({
-                              level: 'files',
-                              team: step.team,
-                              channel: item,
-                            })
+                          : setStep({ level: 'files', team: step.team, channel: item })
                       }
                     >
-                      {step.level === 'teams' ? '👥 ' : '📁 '}
+                      <span aria-hidden>{step.level === 'teams' ? '👥' : '📁'}</span>
                       {item.name}
+                      <span className="ml-auto text-slate-300">›</span>
                     </button>
                   </li>
                 ),
@@ -136,12 +136,12 @@ export default function TeamsPicker({ spaceId, onClose, onImported }: Props) {
           <div className="mt-3 flex justify-end border-t border-slate-100 pt-3">
             <Button onClick={importFiles} disabled={selected.size === 0 || busy}>
               {busy
-                ? 'Importing...'
+                ? 'Importing…'
                 : `Import ${selected.size} file${selected.size === 1 ? '' : 's'}`}
             </Button>
           </div>
         )}
       </div>
-    </div>
+    </Modal>
   )
 }

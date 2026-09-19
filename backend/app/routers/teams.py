@@ -64,6 +64,12 @@ def import_from_teams(
         except (ValueError, FileNotFoundError) as e:
             skipped.append({"file_id": file_id, "reason": str(e)})
             continue
+        except Exception:
+            skipped.append({"file_id": file_id, "reason": "Could not read file"})
+            continue
+        if not text.strip():
+            skipped.append({"file_id": file_id, "reason": "No readable text"})
+            continue
 
         dest = dest_dir / f"{new_id()}_{filename}"
         dest.write_bytes(data)

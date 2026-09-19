@@ -60,3 +60,45 @@ def test_delete_source(client):
     ).json()
     assert client.delete(f"/api/spaces/{sid}/sources/{src['id']}").status_code == 204
     assert client.get(f"/api/spaces/{sid}/sources").json() == []
+
+
+def test_upload_sanitizes_filename(client):
+    sid = client.post("/api/spaces", json={"name": "Bio"}).json()["id"]
+    r = client.post(
+        f"/api/spaces/{sid}/sources",
+        files={"file": ("../../etc/passwd.txt", b"data", "text/plain")},
+    )
+    assert r.status_code == 201
+    assert r.json()["filename"] == "passwd.txt"
+    r = client.post(
+        f"/api/spaces/{sid}/sources",
+        files={"file": (r"C:\Users\me\notes<1>.txt", b"data", "text/plain")},
+    )
+    assert r.status_code == 201
+    assert "/" not in r.json()["filename"] and "\\" not in r.json()["filename"]
+
+
+def test_upload_too_large(client, monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "max_upload_bytes", 10)
+    sid = client.post("/api/spaces", json={"name": "Bio"}).json()["id"]
+    r = client.post(
+        f"/api/spaces/{sid}/sources",
+        files={"file": ("big.txt", b"x" * 11, "text/plain")},
+    )
+    assert r.status_code == 413
+
+
+def test_upload_corrupt_or_empty_file(client):
+    sid = client.post("/api/spaces", json={"name": "Bio"}).json()["id"]
+    corrupt = client.post(
+        f"/api/spaces/{sid}/sources",
+        files={"file": ("bad.pdf", b"not really a pdf", "application/pdf")},
+    )
+    assert corrupt.status_code == 422
+    empty = client.post(
+        f"/api/spaces/{sid}/sources",
+        files={"file": ("empty.txt", b"   \n", "text/plain")},
+    )
+    assert empty.status_code == 422

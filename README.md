@@ -1,13 +1,16 @@
 # briefly
 
-AI study spaces for students. Create a subject space, attach course files
-(manual upload or import from Microsoft Teams — currently a local mock),
-chat with an AI agent that interviews you about your goals, and get a
-generated study plan, condensed notes, and an interactive sample test.
+AI study planner for students. Create a subject, bring in your course materials
+(upload files, import from Microsoft Teams — currently a local mock — or pull in
+your Canvas/Outlook calendar), chat with an AI agent about your goals, and get:
+
+- a **dated study plan** you can tick off, shown on a **calendar** next to your classes and exams
+- condensed **notes**, an interactive **sample test** and **flashcards**
+- a **tutor chat** grounded in your materials that re-plans when your situation changes
 
 ## Stack
 
-- **Backend**: FastAPI + SQLAlchemy + SQLite, Anthropic Claude (`anthropic` SDK)
+- **Backend**: FastAPI + SQLAlchemy + SQLite, with **Google Gemini** (free key) or Anthropic Claude as the AI
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS
 
 ## Setup
@@ -19,11 +22,29 @@ cd backend
 python -m venv .venv
 .venv/Scripts/pip install -e ".[dev]"   # Windows
 # source .venv/bin/activate && pip install -e ".[dev]"  # macOS/Linux
-cp .env.example .env                    # add your ANTHROPIC_API_KEY
+cp .env.example .env                    # then put your GEMINI_API_KEY in .env
+.venv/Scripts/python -m scripts.check_llm   # optional: confirms the key works (10 s)
 .venv/Scripts/uvicorn app.main:app --reload
 ```
 
 API runs on http://localhost:8000 (docs at /docs).
+
+### Getting a Gemini key
+
+1. Open https://aistudio.google.com/apikey and sign in with a Google account.
+2. Click **Create API key** and copy it.
+3. In `backend/.env` add `GEMINI_API_KEY=your-key` (the file is git-ignored — never commit it or paste it in chat).
+4. Restart the backend. The app uses Gemini automatically when that key is set
+   (`LLM_PROVIDER=anthropic` forces Claude instead; `GEMINI_MODEL` changes the model).
+
+Free keys allow only about **5 requests per minute per model**, plus a daily quota. Generating a
+subject's materials makes four calls at once, so the app spreads them over `GEMINI_MODEL` and
+`GEMINI_FALLBACK_MODELS` (each model has its own limit), retries rate-limit errors and skips a
+model that just hit its limit. Chat stays on the main model. If you still see a rate-limit
+message, wait a minute and press **Generate** again.
+
+Model names change: if Google says a model is "no longer available", run
+`python -m scripts.check_llm --models` and set `GEMINI_MODEL` to one from the list.
 
 ### Frontend
 
@@ -35,37 +56,64 @@ npm run dev
 
 App runs on http://localhost:5173 (proxies /api → :8000).
 
+### Demo data (no API key needed)
+
+```bash
+cd backend
+python -m scripts.seed_demo --reset   # two subjects with plans, notes, tests, flashcards and a calendar
+```
+
+Use it to develop the UI, or as a fallback if Wi-Fi or the API fails during a live demo.
+
 ## How it works
 
-1. **Create a space** — name a subject; the AI greets you and starts a short
-   interview (goal, exam date, level, weak topics, weekly hours).
-2. **Attach sources** — upload PDF/DOCX/PPTX/TXT files, or click
-   "Import from Teams" to browse the mock Teams directory
-   (`backend/app/mock_teams/<team>/<channel>/<file>`) and import files.
-3. **Generation** — once the agent saves your profile (`save_student_profile`
-   tool call), the backend generates three artifacts: a study plan, notes,
-   and a sample test (interactive quiz in the UI).
-4. **Tutor mode** — after setup, the chat becomes a tutor grounded in your
-   sources. Artifacts can be regenerated individually.
+1. **Create a subject** — the AI greets you and interviews you (goal, exam date,
+   level, weak topics, weekly hours). It saves your answers with a tool call.
+2. **Attach materials** — upload PDF/DOCX/PPTX/TXT (drag & drop), or browse the mock Teams
+   directory (`backend/app/mock_teams/<team>/<channel>/<file>`).
+3. **Generation runs in the background** — the plan, notes, test and flashcards are generated
+   in parallel and appear one by one. The plan, test and flashcards come back as validated,
+   structured data (forced tool calls, retried once if malformed). If something fails the
+   space is *not* marked ready; a message in the chat explains and **Generate** retries it.
+4. **Calendar** — plan sessions, exams and classes in a month view. Add events by hand, import an
+   `.ics` file or a live feed URL (Canvas → Calendar → *Calendar Feed*; Outlook and Google offer
+   the same), and export your plan as `.ics` for your phone calendar.
+5. **Tutor mode** — answers use the most relevant excerpts of your materials (keyword retrieval
+   over the whole text, not just the beginning). Tell it "I only have 4 hours a week now" and it
+   updates your profile and rebuilds the plan (ticked sessions are kept).
 
-## Teams integration
+## Teams and Canvas
 
-`app/services/teams_provider.py` defines a `TeamsProvider` protocol.
-`MockTeamsProvider` reads a local directory; a real Microsoft Graph
-implementation (Azure AD app + OAuth) can be swapped in without touching
-the routers or UI.
+`app/services/teams_provider.py` defines a `TeamsProvider` protocol; `MockTeamsProvider` reads a
+local directory. A real Microsoft Graph provider (Azure AD app + OAuth) can be swapped in without
+touching the routers or UI. Canvas and Outlook schedules work today through calendar feeds
+(`app/services/ics.py`), which need no OAuth.
+
+## Deploying
+
+The frontend is a static Vite build and deploys to **Vercel** as-is (`frontend/vercel.json`):
+
+1. Import the repo in Vercel and set the **root directory** to `frontend`.
+2. Set `VITE_API_URL` to your backend's public URL (no trailing slash).
+3. On the backend set `CORS_ORIGINS` to your Vercel URL.
+
+The **backend should run on a normal server** (Render, Railway, Fly.io…), not Vercel's
+serverless functions: it keeps SQLite/uploaded files on disk and finishes generation in a
+background thread after responding, both of which serverless platforms discard. For a hackathon
+demo, running both locally (or the seeded demo data) is the safest option.
 
 ## Tests
 
 ```bash
 cd backend && .venv/Scripts/python -m pytest
-cd frontend && npx vitest run && npm run build
+cd frontend && npx tsc -b && npx vitest run && npm run build
 ```
 
 Anthropic calls are mocked in tests; no API key needed to run them.
 
-## Notes / limitations
+## Limitations
 
 - Single-user MVP — no auth.
-- Source text is truncated to a context budget; no embeddings/RAG yet.
-- Generation is synchronous (~10-30s); the UI shows a "generating" state.
+- Recurring calendar events support daily/weekly rules only.
+- No embeddings: retrieval is keyword-based, which is enough for course notes.
+- Study plans depend on the AI; always skim them before relying on them.
