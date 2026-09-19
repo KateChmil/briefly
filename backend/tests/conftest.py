@@ -7,6 +7,9 @@ os.environ["DATABASE_URL"] = f"sqlite:///{(_TMP / 'test.db').as_posix()}"
 os.environ["STORAGE_DIR"] = str(_TMP / "storage")
 os.environ["MOCK_TEAMS_DIR"] = str(_TMP / "mock_teams")
 os.environ["ANTHROPIC_API_KEY"] = "test-key"
+# Tests always use fake clients; never let a developer's real .env pick the provider.
+os.environ["LLM_PROVIDER"] = "anthropic"
+os.environ["GEMINI_API_KEY"] = ""
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402

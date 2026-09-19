@@ -10,7 +10,7 @@ your Canvas/Outlook calendar), chat with an AI agent about your goals, and get:
 
 ## Stack
 
-- **Backend**: FastAPI + SQLAlchemy + SQLite, Anthropic Claude (`anthropic` SDK)
+- **Backend**: FastAPI + SQLAlchemy + SQLite, with **Google Gemini** (free key) or Anthropic Claude as the AI
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS
 
 ## Setup
@@ -22,11 +22,24 @@ cd backend
 python -m venv .venv
 .venv/Scripts/pip install -e ".[dev]"   # Windows
 # source .venv/bin/activate && pip install -e ".[dev]"  # macOS/Linux
-cp .env.example .env                    # add your ANTHROPIC_API_KEY
+cp .env.example .env                    # then put your GEMINI_API_KEY in .env
+.venv/Scripts/python -m scripts.check_llm   # optional: confirms the key works (10 s)
 .venv/Scripts/uvicorn app.main:app --reload
 ```
 
 API runs on http://localhost:8000 (docs at /docs).
+
+### Getting a Gemini key
+
+1. Open https://aistudio.google.com/apikey and sign in with a Google account.
+2. Click **Create API key** and copy it.
+3. In `backend/.env` add `GEMINI_API_KEY=your-key` (the file is git-ignored — never commit it or paste it in chat).
+4. Restart the backend. The app uses Gemini automatically when that key is set
+   (`LLM_PROVIDER=anthropic` forces Claude instead; `GEMINI_MODEL` changes the model).
+
+Free keys have per-minute and daily limits. Generation makes four calls at once and the client
+retries rate-limit errors, but if you see a rate-limit message wait a minute and press
+**Generate** again.
 
 ### Frontend
 

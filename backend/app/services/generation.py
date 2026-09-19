@@ -28,7 +28,7 @@ from ..models import (
     space_exam_date,
 )
 from .agent import text_of
-from .llm import create_message, tool_input
+from .llm import RetryableLLMError, create_message, tool_input
 
 log = logging.getLogger(__name__)
 
@@ -315,14 +315,18 @@ def _structured(system, context, tool, parser, client, max_tokens=4096):
     """Force a tool call, validate the result, and retry once if it is unusable."""
     last_error = "the model did not return structured output"
     for _ in range(2):
-        resp = create_message(
-            system=system,
-            messages=[{"role": "user", "content": context}],
-            tools=[tool],
-            tool_choice={"type": "tool", "name": tool["name"]},
-            max_tokens=max_tokens,
-            client=client,
-        )
+        try:
+            resp = create_message(
+                system=system,
+                messages=[{"role": "user", "content": context}],
+                tools=[tool],
+                tool_choice={"type": "tool", "name": tool["name"]},
+                max_tokens=max_tokens,
+                client=client,
+            )
+        except RetryableLLMError as e:  # e.g. Gemini's malformed function call
+            last_error = str(e)
+            continue
         raw = tool_input(resp, tool["name"])
         if raw is None:
             continue
