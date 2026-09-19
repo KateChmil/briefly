@@ -9,8 +9,10 @@ import type {
   NewEvent,
   NoteAction,
   NoteEnhanceResult,
+  RescheduleResult,
   Source,
   SpaceDetail,
+  SpaceProgress,
   SpaceSummary,
   StudySession,
   TeamsItem,
@@ -140,4 +142,8 @@ export const api = {
     req<void>(`/notes/${noteId}`, { method: 'DELETE' }),
   enhanceNote: (noteId: number, action: NoteAction) =>
     post<NoteEnhanceResult>(`/notes/${noteId}/enhance`, { action }),
+
+  getProgress: (id: string) => req<SpaceProgress>(`/spaces/${id}/progress`),
+  rescheduleSessions: (id: string) =>
+    post<RescheduleResult>(`/spaces/${id}/sessions/reschedule`),
 }

@@ -162,7 +162,9 @@ def main() -> None:
          (11, "Final review", "Weak topics", 45, "review")],
         bio_overview, BIO_NOTES, BIO_QUIZ, BIO_CARDS,
         [("Biology 101", "Lectures", "cell-biology.txt"), ("Biology 101", "Lectures", "genetics-overview.txt")],
-        done=3,
+        # Nothing done: the two sessions in the past are overdue, so the demo
+        # can show the one-click "Reschedule" catch-up planner.
+        done=0,
     )
 
     calc = add_space(

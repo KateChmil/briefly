@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import CalendarRow, { sessionIdOf } from '../components/CalendarRow'
+import { RescheduleButton } from '../components/CatchUp'
 import { Badge, Button, Card, Countdown, ErrorNote, ProgressBar, Spinner } from '../components/ui'
 import {
   addDays,
@@ -53,6 +54,7 @@ export default function DashboardPage({ onNewSpace }: { onNewSpace: () => void }
   const { spaces, error: spacesError, reload } = useSpaces()
   const [items, setItems] = useState<CalendarItem[] | null>(null)
   const [error, setError] = useState('')
+  const [catchupNote, setCatchupNote] = useState('')
   const today = todayISO()
 
   const loadItems = useCallback(async () => {
@@ -106,6 +108,14 @@ export default function DashboardPage({ onNewSpace }: { onNewSpace: () => void }
       overdue: all
         .filter((i) => i.type === 'session' && i.date < today && !i.done)
         .slice(-4),
+      overdueSpaceIds: [
+        ...new Set(
+          all
+            .filter((i) => i.type === 'session' && i.date < today && !i.done)
+            .map((i) => i.space_id)
+            .filter((x): x is string => !!x),
+        ),
+      ],
       upcoming: all.filter((i) => i.date > today && i.date <= addDays(today, 7)).slice(0, 8),
       exams: all.filter((i) => i.kind === 'exam' && i.date >= today).slice(0, 4),
     }
@@ -206,12 +216,25 @@ export default function DashboardPage({ onNewSpace }: { onNewSpace: () => void }
                 <div>
                   {view.overdue.length > 0 && (
                     <div className="mb-2 rounded-xl bg-amber-50/60 p-1">
-                      <p className="px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-amber-700">
-                        Catch up
-                      </p>
+                      <div className="flex items-center justify-between px-3 pt-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                          Catch up
+                        </p>
+                        <RescheduleButton
+                          spaceIds={view.overdueSpaceIds}
+                          onResult={setCatchupNote}
+                          onDone={() => {
+                            void loadItems()
+                            void reload()
+                          }}
+                        />
+                      </div>
                       {view.overdue.map((i) => (
                         <CalendarRow key={i.id} item={i} onToggle={toggle} showDate />
                       ))}
+                      {catchupNote && (
+                        <p className="px-3 pb-2 text-xs text-emerald-700">{catchupNote}</p>
+                      )}
                     </div>
                   )}
                   {view.todays.map((i) => (

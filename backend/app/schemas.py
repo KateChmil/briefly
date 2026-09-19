@@ -183,3 +183,17 @@ class NoteCard(BaseModel):
 class NoteEnhanceResult(BaseModel):
     result: str
     cards: list[NoteCard] | None = None
+
+
+class ProgressOut(BaseModel):
+    done: int
+    total: int
+    overdue: int
+    minutes_left: int
+    on_track: bool
+
+
+class RescheduleResult(BaseModel):
+    sessions: list[SessionOut]
+    moved: int
+    unplaced: list[SessionOut]

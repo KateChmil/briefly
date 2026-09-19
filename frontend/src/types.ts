@@ -156,3 +156,17 @@ export interface NoteEnhanceResult {
   result: string
   cards?: Flashcard[] | null
 }
+
+export interface SpaceProgress {
+  done: number
+  total: number
+  overdue: number
+  minutes_left: number
+  on_track: boolean
+}
+
+export interface RescheduleResult {
+  sessions: StudySession[]
+  moved: number
+  unplaced: StudySession[]
+}
