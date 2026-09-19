@@ -1,0 +1,29 @@
+Calculus II — Integration Techniques
+
+Substitution (u-substitution): reverse of the chain rule. Choose u = g(x)
+so du = g'(x)dx appears in the integrand. For definite integrals, change
+the limits to u-values.
+
+Integration by parts: int u dv = uv - int v du. Comes from the product
+rule. LIATE heuristic for choosing u: Logarithmic, Inverse trig,
+Algebraic, Trig, Exponential. Tabular method helps for repeated parts
+(e.g. x^2 e^x).
+
+Trigonometric integrals: use identities. For int sin^m x cos^n x dx, if m
+odd save sin x and convert rest with sin^2 = 1 - cos^2; if n odd
+symmetric; if both even use power-reduction formulas.
+
+Trig substitution:
+- sqrt(a^2 - x^2): x = a sin t
+- sqrt(a^2 + x^2): x = a tan t
+- sqrt(x^2 - a^2): x = a sec t
+
+Partial fractions: factor the denominator, decompose into simpler
+fractions (linear factors give A/(x - r); repeated linear give terms up
+to the power; irreducible quadratics give (Ax + B)/(quadratic)). Solve
+for constants by equating coefficients or strategic substitution.
+
+Improper integrals: replace the problematic bound with a limit. Type I:
+infinite interval; Type II: discontinuous integrand. Converges if the
+limit is finite. Comparison test: if 0 <= f <= g and int g converges,
+int f converges.

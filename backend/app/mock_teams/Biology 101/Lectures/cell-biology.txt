@@ -1,0 +1,28 @@
+Cell Biology — Lecture Notes (Week 1-3)
+
+Cell theory: all living things are composed of cells; the cell is the basic
+unit of life; all cells arise from pre-existing cells.
+
+Prokaryotic vs eukaryotic cells: prokaryotes lack a nucleus and membrane-bound
+organelles (bacteria, archaea). Eukaryotes have a nucleus and organelles.
+
+Key organelles:
+- Nucleus: stores DNA, site of transcription.
+- Mitochondria: ATP production via cellular respiration (Krebs cycle,
+  oxidative phosphorylation). Inner membrane folds = cristae.
+- Ribosomes: protein synthesis (free in cytoplasm or bound to rough ER).
+- Endoplasmic reticulum: rough ER (ribosomes, protein folding) and smooth ER
+  (lipid synthesis, detoxification).
+- Golgi apparatus: modifies, sorts and packages proteins into vesicles.
+- Lysosomes: digestion of macromolecules via hydrolytic enzymes (low pH).
+- Chloroplasts (plants): photosynthesis; thylakoids contain chlorophyll;
+  light reactions in thylakoid membrane, Calvin cycle in stroma.
+
+Membrane structure: phospholipid bilayer with embedded proteins
+(fluid mosaic model). Transport: passive (diffusion, osmosis, facilitated)
+vs active transport (requires ATP, e.g. Na+/K+ pump). Endocytosis and
+exocytosis move bulk material.
+
+Cell cycle: G1, S (DNA replication), G2, M (mitosis + cytokinesis).
+Mitosis phases: prophase, metaphase, anaphase, telophase.
+Checkpoints regulate progression; cyclins and CDKs are key regulators.

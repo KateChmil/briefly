@@ -1,0 +1,27 @@
+Genetics Overview — Lecture Notes
+
+DNA structure: double helix, sugar-phosphate backbone, complementary base
+pairing (A-T, G-C). Chargaff's rules. Replication is semi-conservative;
+key enzymes: helicase, primase, DNA polymerase (5'->3'), ligase.
+
+Central dogma: DNA -> RNA -> protein.
+Transcription: RNA polymerase synthesizes mRNA from template strand;
+in eukaryotes, pre-mRNA is processed (5' cap, poly-A tail, splicing of
+introns). Translation: ribosomes read codons; tRNA delivers amino acids;
+start codon AUG (Met), stop codons UAA, UAG, UGA.
+
+Mendelian genetics: law of segregation and independent assortment.
+Dominant vs recessive alleles; genotype vs phenotype; Punnett squares.
+Monohybrid cross ratio 3:1; dihybrid 9:3:3:1 (unlinked genes).
+
+Extensions: incomplete dominance, codominance (ABO blood groups),
+linked genes, sex-linked traits (X-linked recessive more common in males),
+polygenic inheritance.
+
+Mutations: point mutations (silent, missense, nonsense), frameshift
+(insertions/deletions), chromosomal mutations. Causes: replication errors,
+mutagens (UV, chemicals).
+
+Population genetics: Hardy-Weinberg equilibrium (p^2 + 2pq + q^2 = 1);
+conditions: no mutation, random mating, no selection, large population,
+no gene flow.

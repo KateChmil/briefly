@@ -1,0 +1,12 @@
+Calculus II — Week 5 Practice Problems
+
+1. Evaluate int x e^(x^2) dx. (Hint: u = x^2.)
+2. Evaluate int x ln x dx using integration by parts.
+3. Evaluate int sin^3 x cos^2 x dx.
+4. Use trig substitution for int dx / sqrt(9 - x^2).
+5. Decompose (5x - 4) / ((x - 1)(x + 2)) into partial fractions.
+6. Determine whether int from 1 to infinity of dx / x^2 converges.
+7. Does sum 1 / n^(3/2) converge? Which test?
+8. Use the ratio test on sum n! / 100^n.
+9. Find the radius of convergence of sum (x - 3)^n / n.
+10. Write the first 4 terms of the Maclaurin series for e^x.

@@ -1,0 +1,20 @@
+Biology 101 — Lab Guidelines and Safety
+
+General rules:
+- Always wear safety goggles and a lab coat; tie back long hair.
+- No food or drink in the lab.
+- Know the location of the eyewash station, safety shower and fire
+  extinguisher.
+- Report all spills and injuries to the TA immediately.
+
+Microscope use:
+- Start on the lowest objective; use coarse focus only at low power.
+- Total magnification = objective x ocular (e.g. 40x x 10x = 400x).
+- Prepare wet mounts with a drop of water and a coverslip at 45 degrees.
+
+Dissection and specimens:
+- Use gloves when handling preserved specimens.
+- Dispose of sharps in the sharps container, never the trash.
+
+Lab reports: include hypothesis, methods, results (tables/graphs),
+discussion and conclusion. Graphs need labeled axes with units.

@@ -1,0 +1,26 @@
+Calculus II — Sequences and Series
+
+Sequences: a_n converges to L if for every epsilon there is N such that
+|a_n - L| < epsilon for n > N. Monotone + bounded => convergent.
+
+Series: sum a_n converges if partial sums converge. Geometric series
+sum ar^n converges iff |r| < 1, sum = a/(1 - r).
+
+Convergence tests:
+- Divergence test: if lim a_n != 0, the series diverges.
+- Integral test: a_n = f(n) positive, continuous, decreasing.
+- p-series: sum 1/n^p converges iff p > 1.
+- Comparison and limit comparison tests.
+- Ratio test: L = lim |a_{n+1}/a_n|; converges if L < 1, diverges if
+  L > 1, inconclusive if L = 1.
+- Root test: similar with lim |a_n|^(1/n).
+- Alternating series test: terms decrease to 0 => converges.
+- Absolute vs conditional convergence.
+
+Power series: sum c_n (x - a)^n; radius of convergence R found via ratio
+test; check endpoints separately. Functions can be differentiated and
+integrated term-by-term inside the radius.
+
+Taylor series: f(x) = sum f^(n)(a)/n! (x - a)^n. Know Maclaurin series
+for e^x, sin x, cos x, 1/(1 - x), ln(1 + x). Taylor remainder bounds
+error.
