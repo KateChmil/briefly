@@ -14,7 +14,7 @@ export interface SpaceSummary {
 
 export interface Source {
   id: string
-  origin: 'upload' | 'teams'
+  origin: 'upload' | 'teams' | 'canvas'
   filename: string
   mime_type: string
   teams_ref: { file_id?: string } | null
@@ -169,4 +169,20 @@ export interface RescheduleResult {
   sessions: StudySession[]
   moved: number
   unplaced: StudySession[]
+}
+
+export interface CanvasItem {
+  id: string
+  name: string
+}
+
+export interface CanvasAssignment {
+  id: string
+  name: string
+  due_at: string | null
+  description: string
+}
+
+export interface CanvasStatus {
+  mode: 'mock' | 'live'
 }

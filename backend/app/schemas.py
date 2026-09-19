@@ -197,3 +197,27 @@ class RescheduleResult(BaseModel):
     sessions: list[SessionOut]
     moved: int
     unplaced: list[SessionOut]
+
+
+class CanvasItemOut(BaseModel):
+    id: str
+    name: str
+
+
+class CanvasAssignmentOut(BaseModel):
+    id: str
+    name: str
+    due_at: datetime | None = None
+    description: str = ""
+
+
+class CanvasImportRequest(BaseModel):
+    file_ids: list[str]
+
+
+class CanvasAssignmentsImportRequest(BaseModel):
+    course_id: str
+
+
+class CanvasStatusOut(BaseModel):
+    mode: Literal["mock", "live"]

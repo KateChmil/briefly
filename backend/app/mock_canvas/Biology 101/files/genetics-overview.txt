@@ -1,0 +1,16 @@
+Genetics Overview
+
+Mendel's laws: segregation (allele pairs split into gametes) and
+independent assortment (genes on different chromosomes sort
+independently). Dominant alleles mask recessive ones in heterozygotes.
+
+Monohybrid cross Aa x Aa gives 1:2:1 genotypes and 3:1 phenotypes.
+Dihybrid crosses give 9:3:3:1 when genes assort independently.
+
+DNA is a double helix of nucleotides (A-T, G-C). Replication is
+semi-conservative. Transcription makes mRNA; translation at ribosomes
+reads codons into amino acids.
+
+Mutations: point (silent, missense, nonsense), insertions and deletions
+(frameshift). Pedigrees track traits: autosomal dominant vs recessive,
+X-linked patterns show mostly in males.

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { api } from '../api/client'
 import type { Source } from '../types'
+import CanvasPicker from './CanvasPicker'
 import TeamsPicker from './TeamsPicker'
 import { Badge, Button, ErrorNote } from './ui'
 
@@ -24,6 +25,7 @@ const iconFor = (filename: string) =>
 export default function SourceList({ spaceId, sources, onChanged }: Props) {
   const fileInput = useRef<HTMLInputElement>(null)
   const [teamsOpen, setTeamsOpen] = useState(false)
+  const [canvasOpen, setCanvasOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [error, setError] = useState('')
@@ -101,6 +103,10 @@ export default function SourceList({ spaceId, sources, onChanged }: Props) {
         <span aria-hidden>👥</span> Import from Microsoft Teams
       </Button>
 
+      <Button variant="secondary" onClick={() => setCanvasOpen(true)}>
+        <span aria-hidden>🎓</span> Import from Canvas
+      </Button>
+
       {error && (
         <div className="whitespace-pre-line">
           <ErrorNote>{error}</ErrorNote>
@@ -121,7 +127,11 @@ export default function SourceList({ spaceId, sources, onChanged }: Props) {
                 {s.filename}
               </p>
               <p className="text-xs text-slate-400">
-                {s.origin === 'teams' ? 'Microsoft Teams' : 'Uploaded'}
+                {s.origin === 'teams'
+                  ? 'Microsoft Teams'
+                  : s.origin === 'canvas'
+                    ? 'Canvas'
+                    : 'Uploaded'}
               </p>
             </div>
             <button
@@ -147,6 +157,17 @@ export default function SourceList({ spaceId, sources, onChanged }: Props) {
           onClose={() => setTeamsOpen(false)}
           onImported={async () => {
             setTeamsOpen(false)
+            await onChanged()
+          }}
+        />
+      )}
+
+      {canvasOpen && (
+        <CanvasPicker
+          spaceId={spaceId}
+          onClose={() => setCanvasOpen(false)}
+          onImported={async () => {
+            setCanvasOpen(false)
             await onChanged()
           }}
         />
