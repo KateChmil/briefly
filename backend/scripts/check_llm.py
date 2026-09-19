@@ -85,7 +85,30 @@ def check_flashcards():
     return f"generated {len(cards)} valid flashcards"
 
 
+def list_models() -> int:
+    """Print the model ids this Gemini key can call (names only)."""
+    import json
+    import urllib.request
+
+    request = urllib.request.Request(
+        settings.gemini_base_url.rstrip("/") + "/models?pageSize=200",
+        headers={"x-goog-api-key": settings.gemini_api_key},
+    )
+    with urllib.request.urlopen(request, timeout=30) as resp:
+        models = json.loads(resp.read().decode()).get("models", [])
+    names = sorted(
+        m["name"].removeprefix("models/")
+        for m in models
+        if "generateContent" in m.get("supportedGenerationMethods", [])
+    )
+    for name in names:
+        print(name)
+    return 0
+
+
 def main() -> int:
+    if "--models" in sys.argv:
+        return list_models()
     provider = settings.provider
     key = settings.gemini_api_key if provider == "gemini" else settings.anthropic_api_key
     print(f"Provider: {provider}   Model: {settings.model_name}")

@@ -26,6 +26,7 @@ def get_client():
             settings.gemini_model,
             base_url=settings.gemini_base_url,
             thinking_budget=settings.gemini_thinking_budget,
+            fallback_models=settings.gemini_fallback_list,
         )
 
     if not settings.anthropic_api_key:

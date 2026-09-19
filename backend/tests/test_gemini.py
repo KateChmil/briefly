@@ -336,3 +336,115 @@ def test_malformed_function_call_is_retried_once():
     gemini = make_client(FakeTransport(bad, good))
     gen = generation.generate_artifact("ctx", generation.ArtifactKind.flashcards, client=gemini)
     assert json.loads(gen.content)["cards"][0]["front"] == "Term 0"
+
+
+# ---- spreading generation across models (free keys: ~5 requests/min per model) --------
+
+
+def fc(name="submit_flashcards", args=None):
+    return ok([{"functionCall": {"name": name, "args": args or {}}, "thoughtSignature": "S"}])
+
+
+def model_of(request):
+    return request[0].split("/models/")[1].split(":")[0]
+
+
+def pooled(transport, models=("m-a", "m-b", "m-c")):
+    sleeps, now = [], [1000.0]
+    client = GeminiClient(
+        "KEY", models[0], fallback_models=list(models[1:]), transport=transport,
+        sleep=lambda s: (sleeps.append(s), now.__setitem__(0, now[0] + s)), clock=lambda: now[0],
+    )
+    client.sleeps, client.now = sleeps, now
+    return client
+
+
+FORCED = {"type": "tool", "name": "submit_flashcards"}
+CARDS_TOOL = {"name": "submit_flashcards", "description": "d", "input_schema": {"type": "object", "properties": {"cards": {"type": "array", "items": {"type": "object"}}}}}
+
+
+def forced_call(client, text="x"):
+    return client.messages.create(
+        messages=[{"role": "user", "content": text}], tools=[CARDS_TOOL], tool_choice=FORCED
+    )
+
+
+def test_generation_calls_are_spread_across_models():
+    transport = FakeTransport(*[fc() for _ in range(6)])
+    client = pooled(transport)
+    for _ in range(6):
+        forced_call(client)
+    used = [model_of(r) for r in transport.requests]
+    assert {m: used.count(m) for m in set(used)} == {"m-a": 2, "m-b": 2, "m-c": 2}
+
+
+def test_rate_limited_model_is_skipped_without_waiting():
+    limited = (429, {"error": {"message": "quota", "details": [{"retryDelay": "30s"}]}})
+    transport = FakeTransport(limited, fc(), fc(), fc())
+    client = pooled(transport)
+    forced_call(client)  # first pick is rate limited -> switches to another model at once
+    assert client.sleeps == []
+    first, second = (model_of(r) for r in transport.requests[:2])
+    assert first != second
+    for _ in range(2):
+        forced_call(client)
+    assert first not in [model_of(r) for r in transport.requests[2:]]  # cooling down
+
+
+def test_all_models_limited_waits_the_suggested_delay():
+    limited = (429, {"error": {"message": "quota", "details": [{"retryDelay": "20s"}]}})
+    transport = FakeTransport(limited, limited, limited, fc())
+    client = pooled(transport)
+    forced_call(client)
+    assert client.sleeps == [20.0]
+    assert len(transport.requests) == 4
+
+
+def test_retired_fallback_model_is_dropped():
+    gone = (404, {"error": {"message": "no longer available to new users"}})
+    seen = []
+
+    def transport(url, headers, body, timeout):
+        seen.append(model_of((url,)))
+        return gone if seen[-1] == "m-b" else fc()
+
+    client = pooled(transport, models=("m-a", "m-b"))
+    for _ in range(4):
+        forced_call(client)  # succeeds every time, even when the rotation lands on m-b
+    assert "m-b" in client._dead
+    assert seen[-2:] == ["m-a", "m-a"]  # and it is not tried again
+
+
+def test_primary_model_404_shows_googles_message():
+    gone = (404, {"error": {"message": "This model is no longer available to new users."}})
+    client = pooled(FakeTransport(gone), models=("m-a",))
+    with pytest.raises(GeminiError, match="no longer available to new users") as exc:
+        forced_call(client)
+    assert "GEMINI_MODEL" in str(exc.value)
+
+
+def test_chat_calls_stay_on_the_primary_model():
+    transport = FakeTransport(*[ok([{"text": "hi"}]) for _ in range(4)])
+    client = pooled(transport)
+    for _ in range(4):  # tools available but no forced choice = a chat turn
+        client.messages.create(messages=[{"role": "user", "content": "hi"}], tools=[CARDS_TOOL])
+    assert {model_of(r) for r in transport.requests} == {"m-a"}
+
+
+def test_tool_conversation_is_pinned_to_the_model_that_made_the_call():
+    transport = FakeTransport(fc(), fc(), ok([{"text": "done"}]))
+    client = pooled(transport)
+    forced_call(client)
+    resp = forced_call(client)  # a different model: produces the tool call we continue with
+    call = resp.content[0]
+    client.messages.create(
+        messages=[
+            {"role": "user", "content": "go"},
+            {"role": "assistant", "content": [{"type": "tool_use", "id": call.id, "name": call.name, "input": {}}]},
+            {"role": "user", "content": [{"type": "tool_result", "tool_use_id": call.id, "content": "ok"}]},
+        ],
+        tools=[CARDS_TOOL],
+    )
+    # the follow-up went to the model that made the call, not to the default rotation pick
+    assert model_of(transport.requests[2]) == model_of(transport.requests[1])
+    assert model_of(transport.requests[1]) != model_of(transport.requests[0])

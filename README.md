@@ -37,9 +37,14 @@ API runs on http://localhost:8000 (docs at /docs).
 4. Restart the backend. The app uses Gemini automatically when that key is set
    (`LLM_PROVIDER=anthropic` forces Claude instead; `GEMINI_MODEL` changes the model).
 
-Free keys have per-minute and daily limits. Generation makes four calls at once and the client
-retries rate-limit errors, but if you see a rate-limit message wait a minute and press
-**Generate** again.
+Free keys allow only about **5 requests per minute per model**, plus a daily quota. Generating a
+subject's materials makes four calls at once, so the app spreads them over `GEMINI_MODEL` and
+`GEMINI_FALLBACK_MODELS` (each model has its own limit), retries rate-limit errors and skips a
+model that just hit its limit. Chat stays on the main model. If you still see a rate-limit
+message, wait a minute and press **Generate** again.
+
+Model names change: if Google says a model is "no longer available", run
+`python -m scripts.check_llm --models` and set `GEMINI_MODEL` to one from the list.
 
 ### Frontend
 

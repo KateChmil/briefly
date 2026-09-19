@@ -261,40 +261,65 @@ def describe_http_error(status: int, payload: dict, model: str) -> GeminiError:
             "and restart the backend."
         )
     if status == 404:
+        # Google's own text says whether the model is unknown or retired for new keys.
         return GeminiError(
-            f"Gemini model '{model}' was not found. Set GEMINI_MODEL in backend/.env "
-            "to a model listed in Google AI Studio."
+            f"Gemini model '{model}' is not available: {message[:220] or 'not found'} "
+            "Set GEMINI_MODEL in backend/.env to a model your key can use "
+            "(python -m scripts.check_llm --models lists them)."
         )
     if status == 429:
         return GeminiError(
-            "Gemini rate limit reached (free keys allow only a few requests per minute "
-            "and a daily quota). Wait a minute and try again."
+            "Gemini rate limit reached (free keys allow only about 5 requests per minute "
+            "per model, plus a daily quota). Wait a minute and try again."
         )
     return GeminiError(f"Gemini error {status}: {message[:200] or 'unknown error'}")
 
 
+def _has_tool_turns(contents: list[dict]) -> bool:
+    return any(
+        "functionCall" in part or "functionResponse" in part
+        for content in contents
+        for part in content["parts"]
+    )
+
+
 class GeminiClient:
-    """Drop-in for the slice of the Anthropic client the app uses."""
+    """Drop-in for the slice of the Anthropic client the app uses.
+
+    Free Gemini keys are limited per model (~5 requests/minute), so independent,
+    single-shot calls (`rotate=True`: the structured generation calls and notes)
+    are spread across `fallback_models` and skip a model that just hit its limit.
+    Conversations with tool calls stay on the model that started them, because a
+    model's thought signatures are only guaranteed to be valid for that model.
+    """
 
     def __init__(
         self,
         api_key: str,
         model: str,
         *,
+        fallback_models: list[str] | tuple[str, ...] = (),
         base_url: str = DEFAULT_BASE_URL,
         thinking_budget: int | None = None,
         timeout: float = 120,
         transport: Transport = urllib_transport,
         sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.monotonic,
     ):
         self.api_key = api_key
         self.model = model
+        self.pool = [model, *[m for m in fallback_models if m != model]]
         self.base_url = base_url.rstrip("/")
         self.thinking_budget = thinking_budget
         self.timeout = timeout
         self._transport = transport
         self._sleep = sleep
+        self._clock = clock
         self._signatures: dict[str, str] = {}
+        self._call_model: dict[str, str] = {}  # tool-call id -> model that produced it
+        self._cooldown: dict[str, float] = {}  # model -> time it may be used again
+        self._dead: set[str] = set()  # fallback models that turned out to be unavailable
+        self._round_robin = 0
         self.messages = self  # so `client.messages.create(...)` works
 
     def create(
@@ -316,28 +341,89 @@ class GeminiClient:
             thinking_budget=self.thinking_budget,
             signatures=self._signatures,
         )
-        return parse_response(self._post(body), self._signatures)
+        pinned = self._pinned_model(messages)
+        # Only independent generation calls may hop between models.
+        rotate = pinned is None and not _has_tool_turns(body["contents"]) and (
+            tool_choice is not None or not tools
+        )
+        data, used = self._post(body, rotate=rotate, pinned=pinned)
+        response = parse_response(data, self._signatures)
+        for block in response.content:
+            if isinstance(block, ToolUseBlock):
+                self._call_model[block.id] = used
+        if len(self._call_model) > MAX_REMEMBERED_SIGNATURES:
+            self._call_model.clear()
+        return response
 
-    def _post(self, body: dict) -> dict:
-        url = f"{self.base_url}/models/{self.model}:generateContent"
+    def _pinned_model(self, messages: list[dict]) -> str | None:
+        """The model that produced any tool call already in this conversation."""
+        for message in messages:
+            if isinstance(message["content"], list):
+                for block in message["content"]:
+                    if block.get("type") == "tool_use" and block["id"] in self._call_model:
+                        return self._call_model[block["id"]]
+        return None
+
+    def _live_models(self) -> list[str]:
+        return [m for m in self.pool if m not in self._dead]
+
+    def _pick(self, rotate: bool, pinned: str | None) -> str:
+        if pinned:
+            return pinned
+        if not rotate:
+            return self.model
+        live = self._live_models()
+        now = self._clock()
+        ready = [m for m in live if self._cooldown.get(m, 0.0) <= now]
+        if not ready:  # everything is cooling down: take whichever frees up first
+            return min(live, key=lambda m: self._cooldown.get(m, 0.0))
+        self._round_robin += 1
+        return ready[self._round_robin % len(ready)]
+
+    def _another_ready(self, current: str, rotate: bool) -> bool:
+        if not rotate:
+            return False
+        now = self._clock()
+        return any(
+            m != current and self._cooldown.get(m, 0.0) <= now for m in self._live_models()
+        )
+
+    def _post(self, body: dict, *, rotate: bool = False, pinned: str | None = None) -> tuple[dict, str]:
         headers = {"Content-Type": "application/json", "x-goog-api-key": self.api_key}
-        attempts = len(BACKOFF_SECONDS) + 1
-        for attempt in range(attempts):
-            last = attempt == attempts - 1
+        backoffs_used = 0
+        hops_left = len(self.pool)
+        while True:
+            model = self._pick(rotate, pinned)
+            url = f"{self.base_url}/models/{model}:generateContent"
             try:
                 status, payload = self._transport(url, headers, body, self.timeout)
             except (OSError, TimeoutError):
-                if last:
+                if backoffs_used >= len(BACKOFF_SECONDS):
                     raise GeminiError("Could not reach Gemini. Check your internet connection.")
-                self._sleep(BACKOFF_SECONDS[attempt])
+                self._sleep(BACKOFF_SECONDS[backoffs_used])
+                backoffs_used += 1
                 continue
+
             if status == 200:
-                return payload
-            if status in RETRY_STATUSES and not last:
-                wait = _retry_delay(payload)
-                if wait is not None and wait > MAX_RETRY_WAIT:
-                    raise describe_http_error(status, payload, self.model)  # quota, not a blip
-                self._sleep(min(wait if wait is not None else BACKOFF_SECONDS[attempt], MAX_RETRY_WAIT))
+                return payload, model
+
+            if status == 404 and rotate and model != self.model and hops_left > 0:
+                self._dead.add(model)  # a fallback that is retired or unknown: stop using it
+                hops_left -= 1
                 continue
-            raise describe_http_error(status, payload, self.model)
-        raise GeminiError("Gemini request failed.")  # unreachable
+
+            if status in RETRY_STATUSES:
+                wait = _retry_delay(payload)
+                if status == 429:
+                    self._cooldown[model] = self._clock() + (wait if wait is not None else 30.0)
+                    if hops_left > 0 and self._another_ready(model, rotate):
+                        hops_left -= 1
+                        continue  # a different model has its own quota: switch, don't wait
+                if wait is not None and wait > MAX_RETRY_WAIT:
+                    raise describe_http_error(status, payload, model)  # daily quota, not a blip
+                if backoffs_used < len(BACKOFF_SECONDS):
+                    delay = wait if wait is not None else BACKOFF_SECONDS[backoffs_used]
+                    self._sleep(min(delay, MAX_RETRY_WAIT))
+                    backoffs_used += 1
+                    continue
+            raise describe_http_error(status, payload, model)

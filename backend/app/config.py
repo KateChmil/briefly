@@ -12,7 +12,10 @@ class Settings(BaseSettings):
     # Gemini key is set, otherwise Anthropic).
     llm_provider: str = "auto"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.6-flash"
+    # Free keys allow ~5 requests/minute *per model*, so generation (four calls at once)
+    # is spread across these extra models. Comma-separated; empty disables.
+    gemini_fallback_models: str = "gemini-3.5-flash,gemini-3.1-flash-lite"
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
     # Optional: cap Gemini's hidden "thinking" tokens (0 = off on Flash models) for speed.
     gemini_thinking_budget: int | None = None
@@ -35,6 +38,10 @@ class Settings(BaseSettings):
         if choice in ("gemini", "anthropic"):
             return choice
         return "gemini" if self.gemini_api_key else "anthropic"
+
+    @property
+    def gemini_fallback_list(self) -> list[str]:
+        return [m.strip() for m in self.gemini_fallback_models.split(",") if m.strip()]
 
     @property
     def model_name(self) -> str:
