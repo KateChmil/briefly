@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { api } from '../api/client'
 import { formatMinutes, formatShort, formatWeekday, todayISO, weekStart } from '../lib/dates'
 import { kindStyle } from '../lib/theme'
-import type { PlanContent, StudySession } from '../types'
+import type { PlanContent, RescheduleResult, SpaceProgress, StudySession } from '../types'
+import { CatchUpBanner, summarize } from './CatchUp'
 import { Badge, ProgressBar } from './ui'
 
 interface Props {
@@ -30,14 +31,42 @@ export default function PlanView({ spaceId, content, sessions, onToggle }: Props
   const plan = useMemo(() => parsePlan(content), [content])
   const today = todayISO()
 
+  const [progress, setProgress] = useState<SpaceProgress | null>(null)
+  const [dateOverrides, setDateOverrides] = useState<ReadonlyMap<number, string>>(new Map())
+  const [catchupNote, setCatchupNote] = useState('')
+
+  const refreshProgress = useCallback(() => {
+    api.getProgress(spaceId).then(setProgress).catch(() => setProgress(null))
+  }, [spaceId])
+
+  useEffect(() => {
+    refreshProgress()
+  }, [refreshProgress, sessions])
+
+  const onRescheduled = (res: RescheduleResult) => {
+    setDateOverrides(new Map(res.sessions.map((s) => [s.id, s.date])))
+    setCatchupNote(summarize(res))
+    refreshProgress()
+  }
+
+  // Show the new dates right away even though the parent still holds the
+  // pre-reschedule list; done flags keep coming from the parent's sessions.
+  const shown = useMemo(
+    () =>
+      sessions.map((s) =>
+        dateOverrides.has(s.id) ? { ...s, date: dateOverrides.get(s.id)! } : s,
+      ),
+    [sessions, dateOverrides],
+  )
+
   const weeks = useMemo(() => {
     const groups = new Map<string, StudySession[]>()
-    for (const s of sessions) {
+    for (const s of shown) {
       const key = weekStart(s.date)
       groups.set(key, [...(groups.get(key) ?? []), s])
     }
     return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b))
-  }, [sessions])
+  }, [shown])
 
   if (!plan) {
     // Older, Markdown-only plan: still readable, just not checkable.
@@ -48,17 +77,30 @@ export default function PlanView({ spaceId, content, sessions, onToggle }: Props
     )
   }
 
-  const done = sessions.filter((s) => s.done).length
-  const minutesLeft = sessions.filter((s) => !s.done).reduce((n, s) => n + s.minutes, 0)
-  const next = sessions.find((s) => !s.done && s.date >= today)
+  const done = shown.filter((s) => s.done).length
+  const minutesLeft = shown.filter((s) => !s.done).reduce((n, s) => n + s.minutes, 0)
+  const next = shown.find((s) => !s.done && s.date >= today)
 
   return (
     <div className="space-y-4">
       <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 p-4 ring-1 ring-indigo-100">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-800">
-            {done}/{sessions.length} sessions done
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-slate-800">
+              {done}/{shown.length} sessions done
+            </p>
+            {progress && (
+              <Badge
+                className={
+                  progress.on_track
+                    ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
+                    : 'bg-amber-50 text-amber-700 ring-amber-200'
+                }
+              >
+                {progress.on_track ? 'On track' : 'Behind'}
+              </Badge>
+            )}
+          </div>
           <span className="text-xs text-slate-500">{formatMinutes(minutesLeft)} left</span>
         </div>
         <ProgressBar value={done} max={sessions.length} />
@@ -80,6 +122,19 @@ export default function PlanView({ spaceId, content, sessions, onToggle }: Props
           </a>
         </div>
       </div>
+
+      {progress && progress.overdue > 0 && (
+        <CatchUpBanner
+          spaceId={spaceId}
+          overdue={progress.overdue}
+          onRescheduled={onRescheduled}
+        />
+      )}
+      {catchupNote && (
+        <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700 ring-1 ring-emerald-200">
+          {catchupNote}
+        </p>
+      )}
 
       {plan.overview && (
         <details className="group rounded-2xl bg-white p-4 ring-1 ring-slate-200/70" open>
