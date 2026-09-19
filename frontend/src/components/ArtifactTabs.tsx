@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import { api } from '../api/client'
 import type { Artifact, ArtifactKind, SpaceStatus, StudySession } from '../types'
 import FlashcardsView from './FlashcardsView'
+import MyNotes from './MyNotes'
 import PlanView from './PlanView'
 import QuizView from './QuizView'
 import { Button, ErrorNote, Spinner } from './ui'
@@ -19,11 +20,14 @@ interface Props {
   onGenerate: () => Promise<void>
 }
 
-const TABS: { kind: ArtifactKind; label: string; icon: string }[] = [
+type TabKind = ArtifactKind | 'my_notes'
+
+const TABS: { kind: TabKind; label: string; icon: string }[] = [
   { kind: 'study_plan', label: 'Plan', icon: '🗓️' },
   { kind: 'notes', label: 'Notes', icon: '📝' },
   { kind: 'sample_test', label: 'Test', icon: '🧪' },
   { kind: 'flashcards', label: 'Cards', icon: '🃏' },
+  { kind: 'my_notes', label: 'My notes', icon: '✏️' },
 ]
 
 function download(name: string, text: string) {
@@ -42,7 +46,7 @@ function GeneratingChecklist({ artifacts }: { artifacts: Artifact[] }) {
         Building your study materials…
       </p>
       <ul className="space-y-3">
-        {TABS.map((t) => {
+        {TABS.filter((t) => t.kind !== 'my_notes').map((t) => {
           const ready = artifacts.some((a) => a.kind === t.kind)
           return (
             <li key={t.kind} className="flex items-center gap-3 text-sm">
@@ -72,7 +76,7 @@ export default function ArtifactTabs({
   onChanged,
   onGenerate,
 }: Props) {
-  const [active, setActive] = useState<ArtifactKind>('study_plan')
+  const [active, setActive] = useState<TabKind>('study_plan')
   const [regenerating, setRegenerating] = useState(false)
   const [error, setError] = useState('')
 
@@ -80,6 +84,7 @@ export default function ArtifactTabs({
   const artifact = artifacts.find((a) => a.kind === active)
 
   const regenerate = async () => {
+    if (active === 'my_notes') return
     setRegenerating(true)
     setError('')
     try {
@@ -93,6 +98,7 @@ export default function ArtifactTabs({
   }
 
   const body = () => {
+    if (active === 'my_notes') return <MyNotes spaceId={spaceId} />
     if (regenerating) return <Spinner label="Regenerating…" />
     if (generating && artifacts.length === 0) return <GeneratingChecklist artifacts={artifacts} />
     if (!artifact) {
@@ -151,7 +157,10 @@ export default function ArtifactTabs({
     <div className="flex min-h-full flex-col">
       <div className="sticky top-0 z-10 flex items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white/90 px-3 py-2 backdrop-blur">
         {TABS.map((t) => {
-          const missing = generating && !artifacts.some((a) => a.kind === t.kind)
+          const missing =
+            generating &&
+            t.kind !== 'my_notes' &&
+            !artifacts.some((a) => a.kind === t.kind)
           return (
             <button
               key={t.kind}
@@ -180,14 +189,16 @@ export default function ArtifactTabs({
               ⬇ .md
             </Button>
           )}
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={regenerating || generating || spaceStatus !== 'ready'}
-            onClick={regenerate}
-          >
-            {regenerating ? 'Working…' : '↻ Regenerate'}
-          </Button>
+          {active !== 'my_notes' && (
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={regenerating || generating || spaceStatus !== 'ready'}
+              onClick={regenerate}
+            >
+              {regenerating ? 'Working…' : '↻ Regenerate'}
+            </Button>
+          )}
         </div>
       </div>
 

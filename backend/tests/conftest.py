@@ -23,6 +23,7 @@ from app.models import (  # noqa: E402
     Source,
     StudySession,
     SubjectSpace,
+    UserNote,
 )
 
 MOCK_TEAMS_DIR = _TMP / "mock_teams"
@@ -36,7 +37,7 @@ def clean_db():
 
     db = SessionLocal()
     for model in (
-        ChatMessage, Source, Artifact, StudySession, CalendarEvent, SubjectSpace
+        ChatMessage, Source, Artifact, StudySession, CalendarEvent, UserNote, SubjectSpace
     ):
         db.query(model).delete()
     db.commit()

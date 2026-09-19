@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import Base, engine
-from .routers import artifacts, calendar, chat, sources, spaces, teams
+from .routers import artifacts, calendar, chat, notes, sources, spaces, teams
 from .services.generation import recover_stuck_spaces
 
 Base.metadata.create_all(engine)
@@ -34,6 +34,7 @@ for r in (
     chat.router,
     artifacts.router,
     calendar.router,
+    notes.router,
 ):
     app.include_router(r)
 

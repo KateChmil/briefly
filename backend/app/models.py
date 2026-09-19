@@ -77,6 +77,9 @@ class SubjectSpace(Base):
     events: Mapped[list["CalendarEvent"]] = relationship(
         back_populates="space", cascade="all, delete-orphan"
     )
+    user_notes: Mapped[list["UserNote"]] = relationship(
+        back_populates="space", cascade="all, delete-orphan"
+    )
 
 
 def space_exam_date(space: SubjectSpace) -> date_t | None:
@@ -188,3 +191,24 @@ class CalendarEvent(Base):
     )
 
     space: Mapped[SubjectSpace | None] = relationship(back_populates="events")
+
+
+class UserNote(Base):
+    """A note the student wrote themselves ("My notes"), per subject space."""
+
+    __tablename__ = "user_notes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    space_id: Mapped[str] = mapped_column(
+        ForeignKey("subject_spaces.id", ondelete="CASCADE")
+    )
+    title: Mapped[str] = mapped_column(String(200), default="")
+    content: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+    space: Mapped[SubjectSpace] = relationship(back_populates="user_notes")
