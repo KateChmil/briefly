@@ -134,3 +134,25 @@ export interface CalendarImportResult {
   imported: number
   skipped: number
 }
+
+export interface UserNote {
+  id: number
+  space_id: string
+  title: string
+  content: string
+  created_at: string
+  updated_at: string
+}
+
+export type NoteAction =
+  | 'summarize'
+  | 'key_terms'
+  | 'simplify'
+  | 'improve'
+  | 'quiz_me'
+  | 'flashcards'
+
+export interface NoteEnhanceResult {
+  result: string
+  cards?: Flashcard[] | null
+}

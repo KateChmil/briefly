@@ -7,11 +7,14 @@ import type {
   ChatResponse,
   ImportResult,
   NewEvent,
+  NoteAction,
+  NoteEnhanceResult,
   Source,
   SpaceDetail,
   SpaceSummary,
   StudySession,
   TeamsItem,
+  UserNote,
 } from '../types'
 
 // Empty in development (Vite proxies /api). Set VITE_API_URL to the backend's
@@ -127,4 +130,14 @@ export const api = {
     }),
   exportUrl: (spaceId?: string) =>
     `${API_BASE}/calendar/export.ics${spaceId ? `?space_id=${encodeURIComponent(spaceId)}` : ''}`,
+
+  listUserNotes: (id: string) => req<UserNote[]>(`/spaces/${id}/notes`),
+  createUserNote: (id: string, note: { title: string; content: string }) =>
+    post<UserNote>(`/spaces/${id}/notes`, note),
+  updateUserNote: (noteId: number, patch: { title?: string; content?: string }) =>
+    send<UserNote>('PATCH', `/notes/${noteId}`, patch),
+  deleteUserNote: (noteId: number) =>
+    req<void>(`/notes/${noteId}`, { method: 'DELETE' }),
+  enhanceNote: (noteId: number, action: NoteAction) =>
+    post<NoteEnhanceResult>(`/notes/${noteId}/enhance`, { action }),
 }

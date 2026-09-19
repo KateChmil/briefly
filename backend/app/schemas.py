@@ -138,3 +138,48 @@ class ImportUrlRequest(BaseModel):
 class ImportResult(BaseModel):
     imported: int
     skipped: int
+
+
+# ---- My notes (student-written notes + AI enhance) -------------------------
+
+MAX_NOTE_CHARS = 20_000
+
+
+class UserNoteOut(BaseModel):
+    id: int
+    space_id: str
+    title: str
+    content: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class UserNoteCreate(BaseModel):
+    title: str = Field(default="", max_length=200)
+    content: str = Field(default="", max_length=MAX_NOTE_CHARS)
+
+
+class UserNotePatch(BaseModel):
+    title: str | None = Field(default=None, max_length=200)
+    content: str | None = Field(default=None, max_length=MAX_NOTE_CHARS)
+
+
+NoteAction = Literal[
+    "summarize", "key_terms", "simplify", "improve", "quiz_me", "flashcards"
+]
+
+
+class NoteEnhanceRequest(BaseModel):
+    action: NoteAction  # unknown action -> 422
+
+
+class NoteCard(BaseModel):
+    front: str
+    back: str
+
+
+class NoteEnhanceResult(BaseModel):
+    result: str
+    cards: list[NoteCard] | None = None
