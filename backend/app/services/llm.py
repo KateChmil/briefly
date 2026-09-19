@@ -15,7 +15,15 @@ def get_client() -> Anthropic:
     return Anthropic(api_key=settings.anthropic_api_key)
 
 
-def create_message(*, system, messages, tools=None, max_tokens=4096, client=None):
+def create_message(
+    *,
+    system,
+    messages,
+    tools=None,
+    tool_choice=None,
+    max_tokens=4096,
+    client=None,
+):
     client = client or get_client()
     kwargs = {
         "model": settings.anthropic_model,
@@ -25,4 +33,14 @@ def create_message(*, system, messages, tools=None, max_tokens=4096, client=None
     }
     if tools:
         kwargs["tools"] = tools
+    if tool_choice:
+        kwargs["tool_choice"] = tool_choice
     return client.messages.create(**kwargs)
+
+
+def tool_input(resp, name: str) -> dict | None:
+    """Input of the first tool_use block called `name`, if the model made one."""
+    for block in resp.content:
+        if block.type == "tool_use" and block.name == name:
+            return dict(block.input)
+    return None

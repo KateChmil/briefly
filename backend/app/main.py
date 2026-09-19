@@ -1,21 +1,40 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .config import settings
 from .db import Base, engine
-from .routers import artifacts, chat, sources, spaces, teams
+from .routers import artifacts, calendar, chat, sources, spaces, teams
+from .services.generation import recover_stuck_spaces
 
 Base.metadata.create_all(engine)
 
-app = FastAPI(title="Briefly API")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # A restart kills any in-flight generation job; don't leave spaces stuck.
+    recover_stuck_spaces()
+    yield
+
+
+app = FastAPI(title="Briefly API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=settings.cors_origin_list,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-for r in (spaces.router, sources.router, teams.router, chat.router, artifacts.router):
+for r in (
+    spaces.router,
+    sources.router,
+    teams.router,
+    chat.router,
+    artifacts.router,
+    calendar.router,
+):
     app.include_router(r)
 
 

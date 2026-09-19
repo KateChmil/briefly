@@ -7,8 +7,14 @@ from sqlalchemy.orm import Session
 
 from ..config import settings
 from ..db import get_db
-from ..models import ChatMessage, SubjectSpace
-from ..schemas import SourceOut, SpaceCreate, SpaceDetail, SpaceSummary
+from ..models import ChatMessage, SubjectSpace, space_exam_date
+from ..schemas import (
+    SessionOut,
+    SourceOut,
+    SpaceCreate,
+    SpaceDetail,
+    SpaceSummary,
+)
 
 router = APIRouter(prefix="/api/spaces", tags=["spaces"])
 
@@ -35,6 +41,7 @@ def to_detail(space: SubjectSpace) -> SpaceDetail:
         name=space.name,
         status=space.status.value,
         profile=space.profile,
+        exam_date=space_exam_date(space),
         created_at=space.created_at,
         sources=[SourceOut.model_validate(s) for s in space.sources],
     )
@@ -42,7 +49,7 @@ def to_detail(space: SubjectSpace) -> SpaceDetail:
 
 @router.post("", response_model=SpaceDetail, status_code=201)
 def create_space(req: SpaceCreate, db: Session = Depends(get_db)):
-    name = req.name.strip()
+    name = req.name.strip()[:200]
     if not name:
         raise HTTPException(status_code=422, detail="Name is required")
     space = SubjectSpace(name=name)
@@ -73,6 +80,9 @@ def list_spaces(db: Session = Depends(get_db)):
             created_at=s.created_at,
             source_count=len(s.sources),
             artifact_count=len(s.artifacts),
+            exam_date=space_exam_date(s),
+            sessions_total=len(s.sessions),
+            sessions_done=sum(1 for x in s.sessions if x.done),
         )
         for s in spaces
     ]
@@ -81,6 +91,11 @@ def list_spaces(db: Session = Depends(get_db)):
 @router.get("/{space_id}", response_model=SpaceDetail)
 def get_space_detail(space_id: str, db: Session = Depends(get_db)):
     return to_detail(get_space(db, space_id))
+
+
+@router.get("/{space_id}/sessions", response_model=list[SessionOut])
+def list_sessions(space_id: str, db: Session = Depends(get_db)):
+    return get_space(db, space_id).sessions
 
 
 @router.delete("/{space_id}", status_code=204)
