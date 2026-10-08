@@ -34,7 +34,8 @@ export default function MyNotes({ spaceId }: { spaceId: string }) {
   const dirty = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const saveNow = useCallback(async () => {
+  // Named function so the retry below can call itself without reading `saveNow` mid-declaration.
+  const saveNow = useCallback(async function save(): Promise<void> {
     if (!dirty.current) return
     const { id, title: t, content: c } = draft.current
     dirty.current = false
@@ -44,7 +45,7 @@ export default function MyNotes({ spaceId }: { spaceId: string }) {
       setNotes((prev) => prev?.map((n) => (n.id === id ? updated : n)) ?? null)
       setSaveState(dirty.current ? 'saving' : 'saved')
       if (dirty.current) {
-        timer.current = setTimeout(() => void saveNow(), SAVE_DELAY)
+        timer.current = setTimeout(() => void save(), SAVE_DELAY)
       }
     } catch {
       setSaveState('error')
@@ -83,9 +84,8 @@ export default function MyNotes({ spaceId }: { spaceId: string }) {
   )
 
   useEffect(() => {
+    // The parent renders <MyNotes key={spaceId}>, so state starts fresh for every space.
     let cancelled = false
-    setNotes(null)
-    setSelectedId(null)
     api
       .listUserNotes(spaceId)
       .then((list) => {
