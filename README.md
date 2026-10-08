@@ -1,12 +1,26 @@
-# briefly
+# Briefly
 
-AI study planner for students. Create a subject, bring in your course materials
+[![CI](https://github.com/KateChmil/briefly/actions/workflows/ci.yml/badge.svg)](https://github.com/KateChmil/briefly/actions/workflows/ci.yml)
+
+AI study planner for students, built at the LaunchLoop x Cognition hackathon in Budapest (September 2026)
+by [Kate Chmil](https://github.com/KateChmil) and [Arda Peker](https://github.com/ardapkr).
+
+![Dashboard: today's sessions, catch-up for missed ones, exam countdown](docs/screenshots/dashboard.png)
+
+Turn your courses, exam dates and calendar into a study plan that adapts when you fall behind. Create a subject, bring in your course materials
 (upload files, import from Microsoft Teams — currently a local mock — or pull in
 your Canvas/Outlook calendar), chat with an AI agent about your goals, and get:
 
 - a **dated study plan** you can tick off, shown on a **calendar** next to your classes and exams
 - condensed **notes**, an interactive **sample test** and **flashcards**
 - a **tutor chat** grounded in your materials that re-plans when your situation changes
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/subject.png" alt="A subject: materials, tutor chat and the generated study plan"></td>
+    <td><img src="docs/screenshots/calendar.png" alt="Calendar with study sessions, classes and exams"></td>
+  </tr>
+</table>
 
 ## Stack
 
@@ -109,7 +123,8 @@ cd backend && .venv/Scripts/python -m pytest
 cd frontend && npx tsc -b && npx vitest run && npm run build
 ```
 
-Anthropic calls are mocked in tests; no API key needed to run them.
+152 tests (122 backend with pytest, 30 frontend with Vitest and Testing Library). AI calls are mocked, so no API
+key is needed. GitHub Actions runs all of them, plus the type check, lint and production build, on every push.
 
 ## Limitations
 

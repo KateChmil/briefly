@@ -98,7 +98,7 @@ export default function ArtifactTabs({
   }
 
   const body = () => {
-    if (active === 'my_notes') return <MyNotes spaceId={spaceId} />
+    if (active === 'my_notes') return <MyNotes key={spaceId} spaceId={spaceId} />
     if (regenerating) return <Spinner label="Regenerating…" />
     if (generating && artifacts.length === 0) return <GeneratingChecklist artifacts={artifacts} />
     if (!artifact) {
